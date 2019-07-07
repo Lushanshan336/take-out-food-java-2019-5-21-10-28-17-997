@@ -12,9 +12,80 @@ public class App {
         this.salesPromotionRepository = salesPromotionRepository;
     }
 
-    public String bestCharge(List<String> inputs) {
-        //TODO: write code here
-
-        return null;
+    public String bestCharge(List<String> inputs) {       
+        List<String> itemIds = new ArrayList<>();
+        List<Integer> itemNumbers = new ArrayList<>();
+        for(String str : inputs){
+            String[] temp = str.split("x");
+            String itemId = temp[0].trim();
+            Integer number = Integer.parseInt(temp[1].trim());
+            itemIds.add(itemId);
+            itemNumbers.add(number);
+        }
+        List<Item> items = itemRepository.findAll();
+        List<String> halfSale = salesPromotionRepository.findAll().get(1).getRelatedItems();
+        StringBuffer halfSaleName = new StringBuffer();
+        double cost1 = 0;
+        double cost2 = 0;
+        double resuleCost；   
+        int flag = 0;
+        StringBuffer sb = new StringBuffer();
+        int reduce = 0;
+        sb.append("============= 订餐明细 =============\n");
+        for(int i=0;i<itemIds.size();i++){
+            for(Item item : items){
+                String itemId = itemIds.get(i);
+                //从数据库中获得当前订单项目的信息
+                if(item.getId().equals(itemId)){
+                	//项目价格
+                    double price = item.getPrice();
+                    //项目花费
+                    double tempCost = price * itemNumbers.get(i);
+                    //写项目花费到输出语句，避免二次查询
+                    sb.append(item.getName()+" x "+itemNumbers.get(i)+" = " + String.format("%.0f", tempCost) +"元\n");
+                    cost1 += tempCost;
+                    //如果当前项目是半价项目
+                    if(halfSale.contains(item.getId())){
+                        tempCost /= 2;
+                        reduce += tempCost;
+                        flag = 2;
+                        halfSaleName.append(item.getName()+"，");
+                    }
+                    cost2 += tempCost ;
+                }
+            }
+        }
+        sb.append("-----------------------------------\n");
+        if(cost1>30){
+            cost1-=6;
+            if(cost1<=cost2){
+                flag = 1;
+                resuleCost = cost1;
+            }else{
+            	flag = 2;
+                resuleCost = cost2;
+            }
+        }else{
+        	flag = 0;
+        	resuleCost = cost1;
+        }
+        
+        switch (flag){
+            case 1:
+                sb.append("使用优惠:\n满30减6元，省6元\n");
+                sb.append("-----------------------------------\n");
+                break;
+            case 2:
+                sb.append("使用优惠:\n指定菜品半价(");
+                sb.append(halfSaleName.substring(0,halfSaleName.length()-1));
+                sb.append(")，省"+reduce+"元\n");
+                sb.append("-----------------------------------\n");
+                break;
+        }
+        sb.append("总计："+String.format("%.0f", resuleCost)+"元\n");
+        sb.append("===================================");
+        return sb.toString();
     }
 }
+    
+
